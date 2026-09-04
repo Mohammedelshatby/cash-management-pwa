@@ -1,0 +1,1202 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">نظام إدارة العُهد والتسويات المحاسبية</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+    @media print {
+      body * { visibility: hidden; }
+      #printable-settlement, #printable-settlement * { visibility: visible; }
+      #printable-settlement { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-20">
+
+  <!-- Header Top Bar -->
+  <header class="bg-slate-900 text-white shadow-xl border-b border-amber-500/30 sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg font-black text-slate-900 text-xl">
+          🏛️
+        </div>
+        <div>
+          <h1 id="header-app-name" class="text-base md:text-lg font-black tracking-wide text-amber-400">نظام إدارة العُهد والتسويات المحاسبية</h1>
+          <p id="header-company-name" class="text-xs text-slate-300 font-medium">مؤسسة الحلول المالية المتكاملة</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="requestSettingsAccess()" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 transition font-bold shadow-sm">
+          <span>⚙️</span>
+          <span>الإعدادات والتحكم</span>
+        </button>
+        <button onclick="requestMasterReset()" class="bg-rose-900/80 hover:bg-rose-800 border border-rose-600/50 text-rose-200 text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 transition font-bold shadow-sm">
+          <span>⚠️</span>
+          <span>تصفير التطبيق</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="bg-slate-950/80 border-t border-slate-800">
+      <div class="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto text-xs font-bold text-slate-300">
+        <button onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="tab-btn py-2.5 px-4 border-b-2 border-amber-500 text-amber-400 flex items-center gap-1.5">
+          <span>🏠</span> الرئيسية والتسوية المجمعة
+        </button>
+        <button onclick="switchTab('tab-petty-cash')" id="btn-tab-petty-cash" class="tab-btn py-2.5 px-4 border-b-2 border-transparent hover:text-white flex items-center gap-1.5">
+          <span>☕</span> حركة النثريات وتسوية الخزينة
+        </button>
+        <button onclick="switchTab('tab-settled-custodies')" id="btn-tab-settled-custodies" class="tab-btn py-2.5 px-4 border-b-2 border-transparent hover:text-white flex items-center gap-1.5">
+          <span>📜</span> سجل العُهد المسواة
+        </button>
+        <button onclick="switchTab('tab-settlement-history')" id="btn-tab-settlement-history" class="tab-btn py-2.5 px-4 border-b-2 border-transparent hover:text-white flex items-center gap-1.5">
+          <span>📑</span> سجل محاضر التسويات
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-4 space-y-6">
+
+    <!-- TAB 1: DASHBOARD & ACTIVE SETTLEMENT -->
+    <div id="tab-dashboard" class="tab-content space-y-6">
+
+      <!-- KPI Summary Cards -->
+      <section class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-blue-600">
+          <p class="text-xs text-slate-500 font-bold">العُهد المفتوحة حالياً</p>
+          <p id="kpi-open-custody" class="text-lg font-black text-slate-900 mt-1">0.00 ج.م</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-amber-500">
+          <p class="text-xs text-slate-500 font-bold">تسويات معلقة (بانتظار السند)</p>
+          <p id="kpi-pending-settlements" class="text-lg font-black text-amber-600 mt-1">0 محضر</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-indigo-600">
+          <p class="text-xs text-slate-500 font-bold">صافي المتبقي الشامل (شامل النثريات)</p>
+          <p id="kpi-net-open" class="text-lg font-black text-slate-900 mt-1">0.00 ج.م</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-emerald-600">
+          <p class="text-xs text-slate-500 font-bold">العُهد المعتمدة والمسواة نهائياً</p>
+          <p id="kpi-closed-custodies-count" class="text-lg font-black text-slate-900 mt-1">0 عُهدة</p>
+        </div>
+      </section>
+
+      <!-- Entry Forms Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Create Custody Form -->
+        <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+          <h2 class="text-sm font-bold text-slate-900 border-b pb-2 flex items-center gap-2">
+            <span class="text-blue-600">💼</span> تسليم عُهدة مالية جديدة
+          </h2>
+          <form onsubmit="handleCreateCustody(event)" class="space-y-3 text-xs">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold mb-1">رقم العُهدة</label>
+                <input type="text" id="c-number" required class="w-full border p-2 rounded-lg bg-slate-50 font-bold text-blue-900">
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">التاريخ</label>
+                <input type="date" id="c-date" required class="w-full border p-2 rounded-lg bg-slate-50">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold mb-1">المندوب المستلم</label>
+                <select id="c-rep-select" required class="w-full border p-2 rounded-lg bg-slate-50 font-bold">
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">مبلغ العُهدة (ج.م)</label>
+                <input type="number" step="0.01" id="c-amount" required placeholder="0.00" class="w-full border p-2 rounded-lg bg-slate-50 font-bold text-emerald-700">
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-slate-900 text-amber-400 py-2.5 rounded-lg font-bold hover:bg-slate-800 transition flex items-center justify-center gap-2">
+              <span>+</span> اعتماد وصرف العُهدة
+            </button>
+          </form>
+        </section>
+
+        <!-- Create Transaction Form (Purchases Only) -->
+        <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+          <h2 class="text-sm font-bold text-slate-900 border-b pb-2 flex items-center gap-2">
+            <span class="text-amber-600">🧾</span> تسجيل فاتورة مشتريات ميدانية
+          </h2>
+          <form onsubmit="handleTransaction(event)" class="space-y-3 text-xs">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold mb-1">ربط بعُهدة (اختياري)</label>
+                <select id="tx-custody-link" class="w-full border p-2 rounded-lg bg-slate-50">
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">نوع المستند</label>
+                <select id="tx-type" class="w-full border p-2 rounded-lg bg-slate-50 font-bold">
+                  <option value="فاتورة مشتريات">فاتورة مشتريات</option>
+                  <option value="إيصال مشتريات">إيصال مشتريات</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold mb-1">المبلغ (ج.م)</label>
+                <input type="number" step="0.01" id="tx-amount" required placeholder="0.00" class="w-full border p-2 rounded-lg bg-slate-50 font-bold text-amber-700">
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">المورد / البيان</label>
+                <input type="text" id="tx-party" required placeholder="اسم المحل أو المورد" class="w-full border p-2 rounded-lg bg-slate-50">
+              </div>
+            </div>
+            <div>
+              <input type="text" id="tx-note" placeholder="ملاحظات الإيصال / رقم الفاتورة الورقية" class="w-full border p-2 rounded-lg bg-slate-50">
+            </div>
+            <button type="submit" class="w-full bg-amber-600 text-white py-2.5 rounded-lg font-bold hover:bg-amber-700 transition flex items-center justify-center gap-2">
+              <span>+</span> حفظ الفاتورة في الانتظار
+            </button>
+          </form>
+        </section>
+
+      </div>
+
+      <!-- Multi-Batch Settlement Panel -->
+      <section class="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 text-white p-5 rounded-2xl shadow-xl border border-amber-500/30 space-y-4">
+        <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-700 pb-3">
+          <div>
+            <h2 class="text-base font-black text-amber-400 flex items-center gap-2">
+              <span>⚖️</span> وحدة التسوية المجمعة والمقاصة
+            </h2>
+            <p class="text-xs text-slate-300">حدد العُهد والفواتير، وقدم المحضر. (تظل التسوية معلقة ولا تتصفى العُهدة رسمياً إلا برقم سند الصرف)</p>
+          </div>
+          <button onclick="processBatchSettlementModal()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 text-xs px-5 py-2.5 rounded-xl font-black shadow-lg transition">
+            إنشاء محضر التسوية ➔
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Selection Column 1: Open Custodies -->
+          <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 space-y-2">
+            <h3 class="text-xs font-bold text-amber-300 flex justify-between items-center border-b border-slate-700 pb-1.5">
+              <span>1. حدد العُهد المفتوحة المراد تسويتها:</span>
+              <span id="c-selected-count" class="text-xxs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">0 مختارة</span>
+            </h3>
+            <div id="custody-checkboxes" class="space-y-2 max-h-52 overflow-y-auto pr-1 text-xs">
+            </div>
+          </div>
+
+          <!-- Selection Column 2: Open Invoices -->
+          <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 space-y-2">
+            <h3 class="text-xs font-bold text-amber-300 flex justify-between items-center border-b border-slate-700 pb-1.5">
+              <span>2. حدد الفواتير والمصروفات المراد تضمينها:</span>
+              <span id="i-selected-count" class="text-xxs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">0 مختارة</span>
+            </h3>
+            <div id="invoice-checkboxes" class="space-y-2 max-h-52 overflow-y-auto pr-1 text-xs">
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Math Summary Box -->
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-700 flex flex-wrap justify-between items-center text-xs font-bold text-slate-200 gap-2">
+          <div>إجمالي العُهد: <span id="batch-custody-sum" class="text-blue-400 font-black">0.00 ج.م</span></div>
+          <div>إجمالي الفواتير والمصروفات: <span id="batch-invoice-sum" class="text-amber-400 font-black">0.00 ج.م</span></div>
+          <div class="border-r border-slate-700 pr-3">نتيجة الحساب: <span id="batch-diff-result" class="text-emerald-400 font-black">0.00 ج.م</span></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- TAB 2: DEDICATED PETTY CASH & TREASURY SECTION -->
+    <div id="tab-petty-cash" class="tab-content hidden space-y-6">
+      <!-- Petty Cash & Treasury KPIs -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-slate-800">
+          <p class="text-xs text-slate-500 font-bold">صافي رصيد الخزينة والنثريات المتبقي</p>
+          <p id="kpi-petty-balance" class="text-lg font-black text-slate-900 mt-1">0.00 ج.م</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-rose-600">
+          <p class="text-xs text-slate-500 font-bold">إجمالي المنصرف من النثريات (-)</p>
+          <p id="kpi-petty-expenses" class="text-lg font-black text-rose-700 mt-1">0.00 ج.م</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-emerald-600">
+          <p class="text-xs text-slate-500 font-bold">إجمالي المردودات والتمويل المضاف (+)</p>
+          <p id="kpi-petty-income" class="text-lg font-black text-emerald-700 mt-1">0.00 ج.م</p>
+        </div>
+      </section>
+
+      <!-- Petty Cash Entry Form & Actions -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+          <h2 class="text-sm font-bold text-slate-900 border-b pb-2 flex items-center gap-2">
+            <span class="text-amber-600">☕</span> حركة نثريات وتغذية/رد الخزينة
+          </h2>
+          <form onsubmit="handlePettyCashTransaction(event)" class="space-y-3 text-xs">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold mb-1">نوع الحركة المالية</label>
+                <select id="pc-type" required class="w-full border p-2 rounded-lg bg-slate-50 font-bold">
+                  <option value="صرف">صرف نثريات (خصم من الصافي -)</option>
+                  <option value="رد">رد / تسوية نثريات (إعادة للصافي +)</option>
+                  <option value="إيداع">تغذية الخزينة / تعويض نثريات (+)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">المبلغ (ج.م)</label>
+                <input type="number" step="0.01" id="pc-amount" required placeholder="0.00" class="w-full border p-2 rounded-lg bg-slate-50 font-bold text-amber-700">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold mb-1">تصنيف المصروف / البيان</label>
+                <input type="text" id="pc-category" required placeholder="مثال: ضيافة، رد متبقي، تغذية خزينة..." class="w-full border p-2 rounded-lg bg-slate-50">
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">المستلم / المسئول</label>
+                <input type="text" id="pc-person" placeholder="اسم الشخص أو المورد" class="w-full border p-2 rounded-lg bg-slate-50">
+              </div>
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">ملاحظات / رقم الإيصال</label>
+              <input type="text" id="pc-note" placeholder="ملاحظات تفصيلية أو رقم سند الخزينة..." class="w-full border p-2 rounded-lg bg-slate-50">
+            </div>
+            <button type="submit" class="w-full bg-slate-900 text-amber-400 py-2.5 rounded-lg font-bold hover:bg-slate-800 transition flex items-center justify-center gap-2">
+              <span>🔄</span> تسجيل الحركة وتحديث الصافي والخزينة
+            </button>
+          </form>
+        </section>
+
+        <!-- Information & Export Panel -->
+        <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3 flex flex-col justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 border-b pb-2 flex items-center gap-2">
+              <span class="text-blue-600">ℹ️</span> قواعد حركة النثريات مع الخزينة والصافي
+            </h2>
+            <div class="text-xs text-slate-600 space-y-2 mt-3 leading-relaxed">
+              <p>• <b>صرف نثريات (-):</b> يتم خصم المبلغ مباشرة من الصافي المتبقي ورصيد النثريات.</p>
+              <p>• <b>رد / تسوية نثريات (+):</b> تُعاد المبالغ المتبقية وتسويتها بالإيجاب لإعادة المبلغ ورده إلى الصافي المتبقي.</p>
+              <p>• <b>تغذية الخزينة (+):</b> إضافة سيولة جديدة لتعويض رصيد العهدة والتسوية.</p>
+            </div>
+          </div>
+          <button onclick="exportPettyCashCSV()" class="w-full bg-slate-800 text-amber-400 py-2.5 rounded-lg font-bold hover:bg-slate-700 transition flex items-center justify-center gap-2 text-xs">
+            <span>📊</span> تصدير سجل النثريات والخزينة Excel
+          </button>
+        </section>
+      </div>
+
+      <!-- Petty Cash Table -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+        <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
+          <h2 class="text-base font-bold text-slate-900">سجل حركات الخزينة والنثريات التفصيلي</h2>
+          <input type="text" id="search-petty-cash" oninput="renderPettyCash()" placeholder="بحث في السجل..." class="border p-2 rounded-lg text-xs w-64 bg-slate-50">
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-right border-collapse">
+            <thead>
+              <tr class="bg-slate-100 border-b text-slate-700 font-bold">
+                <th class="p-2.5">التاريخ والوقت</th>
+                <th class="p-2.5">نوع الحركة</th>
+                <th class="p-2.5">البيان / التصنيف</th>
+                <th class="p-2.5">المستلم / المسئول</th>
+                <th class="p-2.5">المبلغ</th>
+                <th class="p-2.5">الملاحظات</th>
+                <th class="p-2.5">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="petty-cash-tbody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SETTLED CUSTODIES ARCHIVE -->
+    <div id="tab-settled-custodies" class="tab-content hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+        <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">سجل العُهد المسواة والمعتمدة نهائياً</h2>
+            <p class="text-xs text-slate-500">أرشيف للعُهد التي تم إدخال رقم سند الصرف لها وإغلاقها وتصفيرها رسمياً</p>
+          </div>
+          <input type="text" id="search-settled-custody" oninput="renderSettledCustodies()" placeholder="بحث برقم العُهدة أو المندوب..." class="border p-2 rounded-lg text-xs w-64 bg-slate-50">
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-right border-collapse">
+            <thead>
+              <tr class="bg-slate-100 border-b text-slate-700 font-bold">
+                <th class="p-2.5">رقم العُهدة</th>
+                <th class="p-2.5">اسم المندوب</th>
+                <th class="p-2.5">تاريخ الاستلام</th>
+                <th class="p-2.5">قيمة العُهدة الأصلية</th>
+                <th class="p-2.5">المتبقي بعد التصفية</th>
+                <th class="p-2.5">محضر التسوية المرتبط</th>
+                <th class="p-2.5">حالة الحساب</th>
+              </tr>
+            </thead>
+            <tbody id="settled-custodies-tbody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: SETTLEMENT LOG -->
+    <div id="tab-settlement-history" class="tab-content hidden space-y-4">
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+        <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">سجل محاضر التسويات (المعلقة والمعتمدة)</h2>
+            <p class="text-xs text-slate-500">يمكنك تأكيد وتفعيل التسويات المعلقة من هنا بإدخال رقم سند الصرف مباشرة</p>
+          </div>
+          <button onclick="exportSettlementsCSV()" class="bg-slate-800 text-amber-400 text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1">
+            <span>📊</span> تصدير السجل Excel
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-right border-collapse">
+            <thead>
+              <tr class="bg-slate-100 border-b text-slate-700 font-bold">
+                <th class="p-2.5">رقم التسوية</th>
+                <th class="p-2.5">تاريخ المحضر</th>
+                <th class="p-2.5">حالة الاعتماد</th>
+                <th class="p-2.5">رقم سند الصرف/القبض</th>
+                <th class="p-2.5">إجمالي العُهد</th>
+                <th class="p-2.5">إجمالي الفواتير</th>
+                <th class="p-2.5">النتيجة المالية</th>
+                <th class="p-2.5">الإجراءات والطباعة</th>
+              </tr>
+            </thead>
+            <tbody id="settlement-log-tbody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: SETTINGS & CONTROL CENTER -->
+  <div id="modal-settings" class="fixed inset-0 bg-slate-950/70 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-xl w-full space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto border border-slate-300">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+          <span>⚙️</span> مركز التحكم وإعدادات النظام
+        </h3>
+        <button onclick="toggleModal('modal-settings')" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+      </div>
+
+      <form onsubmit="saveAppSettings(event)" class="space-y-3 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <h4 class="font-bold text-slate-800 border-b pb-1">1. الهوية والاسم التجاري للمنشأة:</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">اسم التطبيق الخارجي:</label>
+            <input type="text" id="set-app-name" required class="w-full border p-2 rounded-lg bg-white">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">اسم المؤسسة / الشركة:</label>
+            <input type="text" id="set-company-name" required class="w-full border p-2 rounded-lg bg-white">
+          </div>
+        </div>
+        <button type="submit" class="bg-slate-900 text-amber-400 px-4 py-2 rounded-lg font-bold">حفظ تعديلات الهوية</button>
+      </form>
+
+      <div class="space-y-3 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <h4 class="font-bold text-slate-800 border-b pb-1">2. إدارة قائمة المندوبين المخزنة:</h4>
+        <form onsubmit="handleAddRepresentative(event)" class="flex gap-2">
+          <input type="text" id="new-rep-name" placeholder="اسم مندوب جديد..." required class="border p-2 rounded-lg flex-1 bg-white">
+          <button type="submit" class="bg-blue-700 text-white px-4 py-2 rounded-lg font-bold">+ إضافة للقائمة</button>
+        </form>
+        <div id="reps-chips-container" class="flex flex-wrap gap-2 pt-2">
+        </div>
+      </div>
+
+      <form onsubmit="saveSecurityPins(event)" class="space-y-3 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <h4 class="font-bold text-slate-800 border-b pb-1">3. إعدادات الأمان والأرقام السرية:</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">رقم سر الإعدادات:</label>
+            <input type="password" id="set-settings-pin" required class="w-full border p-2 rounded-lg bg-white font-bold text-center">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">رقم سر التصفير الشامل:</label>
+            <input type="password" id="set-reset-pin" required class="w-full border p-2 rounded-lg bg-white font-bold text-center text-rose-700">
+          </div>
+        </div>
+        <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold">تحديث الأرقام السرية</button>
+      </form>
+
+      <div class="space-y-2 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <h4 class="font-bold text-slate-800 border-b pb-1">4. النسخ الاحتياطي والاسترجاع:</h4>
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button onclick="exportFullJSONBackup()" class="bg-emerald-700 text-white px-3 py-2 rounded-lg font-bold">تصدير نسخة احتياطية (.json)</button>
+          <label class="bg-slate-700 text-white px-3 py-2 rounded-lg font-bold cursor-pointer inline-block">
+            استرجاع نسخة ملف JSON
+            <input type="file" accept=".json" onchange="importFullJSONBackup(event)" class="hidden">
+          </label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: ENTER SETTINGS PIN -->
+  <div id="modal-pin-settings" class="fixed inset-0 bg-slate-950/80 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl p-5 max-w-xs w-full space-y-3 text-center border">
+      <h3 class="text-sm font-bold text-slate-900">أدخل رقم سر الإعدادات</h3>
+      <p class="text-xxs text-slate-500">يرجى إدخال الرقم السري للوصول للإعدادات</p>
+      <input type="password" id="input-settings-pin" placeholder="****" class="border p-2 rounded-lg text-center font-black text-lg w-full bg-slate-50">
+      <div class="flex gap-2">
+        <button onclick="toggleModal('modal-pin-settings')" class="w-1/2 py-2 border rounded-lg text-xs font-bold">إلغاء</button>
+        <button onclick="verifySettingsPin()" class="w-1/2 py-2 bg-slate-900 text-amber-400 rounded-lg text-xs font-bold">دخول</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MASTER RESET CONFIRMATION -->
+  <div id="modal-pin-reset" class="fixed inset-0 bg-rose-950/80 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl p-5 max-w-xs w-full space-y-3 text-center border border-rose-300 shadow-2xl">
+      <h3 class="text-sm font-bold text-rose-900">⚠️ تأكيد تصفير ومسح كافة البيانات</h3>
+      <p class="text-xxs text-slate-500">سوف يتم مسح جميع العُهد والفواتير ومحاضر التسويات والنثريات. يُرجى أدخل الرقم السري للتأكيد.</p>
+      <input type="password" id="input-reset-pin" placeholder="****" class="border p-2 rounded-lg text-center font-black text-lg w-full bg-rose-50 text-rose-900">
+      <div class="flex gap-2">
+        <button onclick="toggleModal('modal-pin-reset')" class="w-1/2 py-2 border rounded-lg text-xs font-bold">إلغاء</button>
+        <button onclick="executeMasterReset()" class="w-1/2 py-2 bg-rose-700 text-white rounded-lg text-xs font-bold">تصفير ومسح الشامل</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FINALIZE BATCH SETTLEMENT -->
+  <div id="batch-settlement-modal" class="fixed inset-0 bg-slate-950/70 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-5 max-w-lg w-full space-y-4 shadow-2xl">
+      <h3 class="text-base font-bold text-slate-900 border-b pb-2">إنهاء ومراجعة محضر التسوية</h3>
+      
+      <div id="modal-batch-summary" class="text-xs space-y-2 bg-slate-50 p-3.5 rounded-xl border">
+      </div>
+
+      <form onsubmit="saveBatchSettlement(event)" class="space-y-3 pt-2 text-xs">
+        <div class="bg-amber-50 p-3 rounded-xl border border-amber-300 text-amber-900 space-y-1">
+          <label class="block font-black text-xs text-amber-950">🔑 رقم سند الصرف / القبض (شرط الاعتماد والتصفية النهائياً):</label>
+          <input type="text" id="batch-voucher-no" placeholder="أدخل رقم سند الصرف هنا للتفعيل الفوري..." class="w-full border border-amber-400 p-2.5 rounded-lg bg-white font-black text-amber-900 text-sm">
+          <p class="text-xxs text-amber-800 font-bold mt-1">💡 تنبيه رقابي: إذا تركت رقم السند فارغاً، ستبقى التسوية بحالة (معلقة) ولن تتصفى العُهدة حتى إدخاله لاحقاً.</p>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">ملاحظات المحاسب:</label>
+          <input type="text" id="batch-notes" placeholder="تم مراجعة الفواتير وإعداد محضر التسوية" class="w-full border p-2.5 rounded-lg bg-slate-50">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t">
+          <button type="button" onclick="toggleModal('batch-settlement-modal')" class="px-4 py-2 border rounded-lg text-xs font-bold">إلغاء</button>
+          <button type="submit" class="px-5 py-2 bg-slate-900 text-amber-400 rounded-lg text-xs font-bold">حفظ المحضر والطباعة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: VIEW SETTLEMENT LOG DETAIL & VOUCHER CONFIRMATION -->
+  <div id="view-log-modal" class="fixed inset-0 bg-slate-950/70 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-base font-bold text-slate-900">تفاصيل محضر التسوية والرقابة</h3>
+        <button onclick="toggleModal('view-log-modal')" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      
+      <div id="log-detail-content" class="text-xs space-y-3">
+      </div>
+
+      <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-300 text-xs space-y-2">
+        <label class="block font-black text-amber-950 text-sm">تأكيد وتفعيل التسوية النهائية (إدخال رقم سند الصرف):</label>
+        <p class="text-xxs text-slate-600 font-bold">أدخل رقم السند المعتمد لتغيير حالة التصفية من "معلقة" إلى "معتمدة ومسواة نهائياً".</p>
+        <div class="flex gap-2 pt-1">
+          <input type="text" id="edit-voucher-input" placeholder="أدخل رقم سند الصرف/القبض..." class="border border-amber-400 p-2.5 rounded-lg flex-1 bg-white font-black text-slate-900 text-sm">
+          <button id="update-voucher-btn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-lg font-bold shadow-md">تأكيد وتفعيل التسوية النهائياً</button>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center border-t pt-4">
+        <button id="reopen-settlement-btn" class="px-3 py-2 bg-rose-100 text-rose-800 rounded-lg text-xs font-bold hover:bg-rose-200">إلغاء المحضر وإعادة فتح العُهد</button>
+        <div class="flex gap-2">
+          <button onclick="toggleModal('view-log-modal')" class="px-4 py-2 border rounded-lg text-xs font-bold">إغلاق</button>
+          <button id="reprint-log-btn" class="px-5 py-2 bg-slate-900 text-amber-400 rounded-lg text-xs font-bold flex items-center gap-1">
+            <span>🖨️</span> طباعة / تصدير PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINTABLE SETTLEMENT REPORT SHEET -->
+  <div id="printable-settlement" class="hidden p-8 font-sans text-slate-900 text-xs max-w-2xl mx-auto border border-slate-300">
+    <div class="text-center font-black text-lg mb-1 border-b pb-2" id="pr-company-title">اسم المؤسسة</div>
+    <div id="pr-status-header" class="text-center font-black text-sm mb-4 px-3 py-1 rounded">محضر تسوية العُهد الميدانية</div>
+    
+    <div class="grid grid-cols-2 gap-2 mb-4 bg-slate-50 p-3 rounded border">
+      <p>رقم المحضر: <b id="pr-s-id" class="text-blue-900"></b></p>
+      <p>التاريخ والوقت: <b id="pr-s-date"></b></p>
+      <p>حالة المحضر: <b id="pr-s-status-badge"></b></p>
+      <p>رقم سند الصرف/القبض: <b id="pr-s-voucher" class="text-amber-800"></b></p>
+    </div>
+
+    <div class="mb-3">
+      <p class="font-bold border-b pb-1 mb-1">1. العُهد المشمولة في المحضر:</p>
+      <div id="pr-custodies-list" class="space-y-1 pr-2"></div>
+    </div>
+
+    <div class="mb-3">
+      <p class="font-bold border-b pb-1 mb-1">2. الفواتير والمشتريات المسواة:</p>
+      <table class="w-full text-right border-collapse border my-1">
+        <thead>
+          <tr class="bg-slate-100 border">
+            <th class="p-1.5">المورد/البيان</th>
+            <th class="p-1.5">النوع</th>
+            <th class="p-1.5">المبلغ</th>
+          </tr>
+        </thead>
+        <tbody id="pr-invoices-list"></tbody>
+      </table>
+    </div>
+
+    <div class="bg-slate-100 p-3 rounded font-bold border space-y-1 mb-4">
+      <p class="flex justify-between"><span>إجمالي العُهد:</span> <span id="pr-total-custodies">0.00 ج.م</span></p>
+      <p class="flex justify-between"><span>إجمالي الفواتير:</span> <span id="pr-total-invoices">0.00 ج.م</span></p>
+      <p class="flex justify-between border-t pt-1 text-sm"><span>الصافي المطلوب / المردود:</span> <span id="pr-net-result">0.00 ج.م</span></p>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2 text-center text-xxs font-bold pt-8">
+      <div>توقيع المندوب<br><br>........................</div>
+      <div>توقيع المحاسب<br><br>........................</div>
+      <div>اعتماد الإدارة<br><br>........................</div>
+    </div>
+  </div>
+
+  <!-- SCRIPT INTEGRATION & LOGIC -->
+  <script>
+    // State storage
+    let appSettings = JSON.parse(localStorage.getItem('appSettings')) || {
+      appName: 'نظام إدارة العُهد والتسويات المحاسبية',
+      companyName: 'مؤسسة الحلول المالية المتكاملة',
+      settingsPin: '1234',
+      resetPin: '9999'
+    };
+
+    let representatives = JSON.parse(localStorage.getItem('representatives')) || ['أحمد محمود', 'محمد علي', 'محمود حسن'];
+    let custodies = JSON.parse(localStorage.getItem('custodies')) || [];
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    let pettyCashLog = JSON.parse(localStorage.getItem('pettyCashLog')) || [];
+    let settlements = JSON.parse(localStorage.getItem('settlements')) || [];
+
+    let currentActiveLogId = null;
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('c-date').valueAsDate = new Date();
+      applyBranding();
+      renderRepsDropdown();
+      renderRepsChips();
+      renderAll();
+    });
+
+    function saveData() {
+      localStorage.setItem('appSettings', JSON.stringify(appSettings));
+      localStorage.setItem('representatives', JSON.stringify(representatives));
+      localStorage.setItem('custodies', JSON.stringify(custodies));
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+      localStorage.setItem('pettyCashLog', JSON.stringify(pettyCashLog));
+      localStorage.setItem('settlements', JSON.stringify(settlements));
+      renderAll();
+    }
+
+    function applyBranding() {
+      document.getElementById('header-app-name').innerText = appSettings.appName;
+      document.getElementById('page-title').innerText = appSettings.appName;
+      document.getElementById('header-company-name').innerText = appSettings.companyName;
+      document.getElementById('pr-company-title').innerText = appSettings.companyName;
+      document.getElementById('set-app-name').value = appSettings.appName;
+      document.getElementById('set-company-name').value = appSettings.companyName;
+      document.getElementById('set-settings-pin').value = appSettings.settingsPin;
+      document.getElementById('set-reset-pin').value = appSettings.resetPin;
+    }
+
+    // Tabs Navigation
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-amber-500', 'text-amber-400');
+        btn.classList.add('border-transparent');
+      });
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('btn-' + tabId);
+      if (activeBtn) {
+        activeBtn.classList.add('border-amber-500', 'text-amber-400');
+        activeBtn.classList.remove('border-transparent');
+      }
+    }
+
+    // Modals Controller
+    function toggleModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function requestSettingsAccess() {
+      document.getElementById('input-settings-pin').value = '';
+      toggleModal('modal-pin-settings');
+    }
+
+    function verifySettingsPin() {
+      const input = document.getElementById('input-settings-pin').value;
+      if (input === appSettings.settingsPin) {
+        toggleModal('modal-pin-settings');
+        toggleModal('modal-settings');
+      } else {
+        alert('الرقم السري غير صحيح!');
+      }
+    }
+
+    function requestMasterReset() {
+      document.getElementById('input-reset-pin').value = '';
+      toggleModal('modal-pin-reset');
+    }
+
+    function executeMasterReset() {
+      const input = document.getElementById('input-reset-pin').value;
+      if (input === appSettings.resetPin) {
+        localStorage.clear();
+        location.reload();
+      } else {
+        alert('رقم التصفير السري غير صحيح!');
+      }
+    }
+
+    // Handlers
+    function handleCreateCustody(e) {
+      e.preventDefault();
+      const num = document.getElementById('c-number').value;
+      const date = document.getElementById('c-date').value;
+      const rep = document.getElementById('c-rep-select').value;
+      const amount = parseFloat(document.getElementById('c-amount').value);
+
+      custodies.push({ id: 'CST-' + Date.now(), number: num, date, rep, amount, status: 'مفتوحة' });
+      saveData();
+      e.target.reset();
+      document.getElementById('c-date').valueAsDate = new Date();
+    }
+
+    function handleTransaction(e) {
+      e.preventDefault();
+      const custodyId = document.getElementById('tx-custody-link').value;
+      const type = document.getElementById('tx-type').value;
+      const amount = parseFloat(document.getElementById('tx-amount').value);
+      const party = document.getElementById('tx-party').value;
+      const note = document.getElementById('tx-note').value;
+
+      transactions.push({ id: 'TX-' + Date.now(), custodyId, type, amount, party, note, status: 'في الانتظار', date: new Date().toISOString().slice(0, 10) });
+      saveData();
+      e.target.reset();
+    }
+
+    function handlePettyCashTransaction(e) {
+      e.preventDefault();
+      const type = document.getElementById('pc-type').value;
+      const amount = parseFloat(document.getElementById('pc-amount').value);
+      const category = document.getElementById('pc-category').value;
+      const person = document.getElementById('pc-person').value;
+      const note = document.getElementById('pc-note').value;
+
+      pettyCashLog.push({ id: 'PC-' + Date.now(), date: new Date().toLocaleString('ar-EG'), type, amount, category, person, note });
+      saveData();
+      e.target.reset();
+    }
+
+    // Render functions
+    function renderRepsDropdown() {
+      const select1 = document.getElementById('c-rep-select');
+      select1.innerHTML = representatives.map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+
+    function renderRepsChips() {
+      const container = document.getElementById('reps-chips-container');
+      container.innerHTML = representatives.map((r, i) => `
+        <span class="bg-blue-100 text-blue-900 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+          ${r}
+          <button onclick="removeRep(${i})" class="text-rose-600 hover:text-rose-800 font-black">×</button>
+        </span>
+      `).join('');
+    }
+
+    function handleAddRepresentative(e) {
+      e.preventDefault();
+      const input = document.getElementById('new-rep-name');
+      if (input.value.trim()) {
+        representatives.push(input.value.trim());
+        input.value = '';
+        saveData();
+        renderRepsDropdown();
+        renderRepsChips();
+      }
+    }
+
+    function removeRep(index) {
+      representatives.splice(index, 1);
+      saveData();
+      renderRepsDropdown();
+      renderRepsChips();
+    }
+
+    function renderAll() {
+      renderKPIs();
+      renderCustodyCheckboxes();
+      renderInvoiceCheckboxes();
+      renderCustodyLinks();
+      renderPettyCash();
+      renderSettledCustodies();
+      renderSettlementLog();
+      updateBatchMath();
+    }
+
+    function renderKPIs() {
+      const openCustodies = custodies.filter(c => c.status === 'مفتوحة');
+      const totalOpenCustodies = openCustodies.reduce((sum, c) => sum + c.amount, 0);
+      const pendingSettlementsCount = settlements.filter(s => s.status === 'معلقة').length;
+      const closedCustodiesCount = custodies.filter(c => c.status === 'مسواة').length;
+
+      let pettyIncome = pettyCashLog.filter(p => p.type === 'إيداع' || p.type === 'رد').reduce((sum, p) => sum + p.amount, 0);
+      let pettyExpenses = pettyCashLog.filter(p => p.type === 'صرف').reduce((sum, p) => sum + p.amount, 0);
+      let pettyBalance = pettyIncome - pettyExpenses;
+
+      document.getElementById('kpi-open-custody').innerText = totalOpenCustodies.toFixed(2) + ' ج.م';
+      document.getElementById('kpi-pending-settlements').innerText = pendingSettlementsCount + ' محضر';
+      document.getElementById('kpi-closed-custodies-count').innerText = closedCustodiesCount + ' عُهدة';
+      document.getElementById('kpi-net-open').innerText = (totalOpenCustodies + pettyBalance).toFixed(2) + ' ج.م';
+
+      document.getElementById('kpi-petty-balance').innerText = pettyBalance.toFixed(2) + ' ج.م';
+      document.getElementById('kpi-petty-expenses').innerText = pettyExpenses.toFixed(2) + ' ج.م';
+      document.getElementById('kpi-petty-income').innerText = pettyIncome.toFixed(2) + ' ج.م';
+    }
+
+    function renderCustodyLinks() {
+      const select = document.getElementById('tx-custody-link');
+      const openCustodies = custodies.filter(c => c.status === 'مفتوحة');
+      select.innerHTML = '<option value="">بدون ربط مباشر</option>' + 
+        openCustodies.map(c => `<option value="${c.id}">عُهدة #${c.number} - ${c.rep} (${c.amount} ج.م)</option>`).join('');
+    }
+
+    function renderCustodyCheckboxes() {
+      const container = document.getElementById('custody-checkboxes');
+      const openCustodies = custodies.filter(c => c.status === 'مفتوحة');
+      if (openCustodies.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-center py-2">لا توجد عُهد مفتوحة حالياً</p>';
+        return;
+      }
+      container.innerHTML = openCustodies.map(c => `
+        <label class="flex items-center justify-between p-2 bg-slate-900/60 rounded-lg border border-slate-700 cursor-pointer hover:border-amber-400 transition">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" value="${c.id}" class="custody-cb w-4 h-4 accent-amber-500" onchange="updateBatchMath()">
+            <span><b>#${c.number}</b> - ${c.rep}</span>
+          </div>
+          <span class="text-blue-400 font-bold">${c.amount.toFixed(2)} ج.م</span>
+        </label>
+      `).join('');
+    }
+
+    function renderInvoiceCheckboxes() {
+      const container = document.getElementById('invoice-checkboxes');
+      const pendingInvoices = transactions.filter(t => t.status === 'في الانتظار');
+      if (pendingInvoices.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-center py-2">لا توجد فواتير معلقة</p>';
+        return;
+      }
+      container.innerHTML = pendingInvoices.map(t => `
+        <label class="flex items-center justify-between p-2 bg-slate-900/60 rounded-lg border border-slate-700 cursor-pointer hover:border-amber-400 transition">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" value="${t.id}" class="invoice-cb w-4 h-4 accent-amber-500" onchange="updateBatchMath()">
+            <span><b>${t.party}</b> (${t.type})</span>
+          </div>
+          <span class="text-amber-400 font-bold">${t.amount.toFixed(2)} ج.م</span>
+        </label>
+      `).join('');
+    }
+
+    function updateBatchMath() {
+      const selectedCustodyIds = Array.from(document.querySelectorAll('.custody-cb:checked')).map(cb => cb.value);
+      const selectedInvoiceIds = Array.from(document.querySelectorAll('.invoice-cb:checked')).map(cb => cb.value);
+
+      const custodiesSum = custodies.filter(c => selectedCustodyIds.includes(c.id)).reduce((s, c) => s + c.amount, 0);
+      const invoicesSum = transactions.filter(t => selectedInvoiceIds.includes(t.id)).reduce((s, t) => s + t.amount, 0);
+      const diff = custodiesSum - invoicesSum;
+
+      document.getElementById('c-selected-count').innerText = selectedCustodyIds.length + ' مختارة';
+      document.getElementById('i-selected-count').innerText = selectedInvoiceIds.length + ' مختارة';
+
+      document.getElementById('batch-custody-sum').innerText = custodiesSum.toFixed(2) + ' ج.م';
+      document.getElementById('batch-invoice-sum').innerText = invoicesSum.toFixed(2) + ' ج.م';
+      document.getElementById('batch-diff-result').innerText = diff.toFixed(2) + ' ج.م';
+    }
+
+    function processBatchSettlementModal() {
+      const selectedCustodyIds = Array.from(document.querySelectorAll('.custody-cb:checked')).map(cb => cb.value);
+      const selectedInvoiceIds = Array.from(document.querySelectorAll('.invoice-cb:checked')).map(cb => cb.value);
+
+      if (selectedCustodyIds.length === 0 && selectedInvoiceIds.length === 0) {
+        alert('برجاء تحديد عُهدة واحدة أو فاتورة واحدة على الأقل لإجراء التسوية!');
+        return;
+      }
+
+      const custodiesSum = custodies.filter(c => selectedCustodyIds.includes(c.id)).reduce((s, c) => s + c.amount, 0);
+      const invoicesSum = transactions.filter(t => selectedInvoiceIds.includes(t.id)).reduce((s, t) => s + t.amount, 0);
+      const result = custodiesSum - invoicesSum;
+
+      document.getElementById('modal-batch-summary').innerHTML = `
+        <p><b>عدد العُهد المحددة:</b> ${selectedCustodyIds.length} (الإجمالي: ${custodiesSum.toFixed(2)} ج.م)</p>
+        <p><b>عدد الفواتير المحددة:</b> ${selectedInvoiceIds.length} (الإجمالي: ${invoicesSum.toFixed(2)} ج.م)</p>
+        <p class="text-sm font-black text-blue-900 border-t pt-1">النتيجة المالية: ${result.toFixed(2)} ج.م ${result >= 0 ? '(متبقي مع المندوب)' : '(مستحق للمندوب)'}</p>
+      `;
+
+      toggleModal('batch-settlement-modal');
+    }
+
+    function saveBatchSettlement(e) {
+      e.preventDefault();
+      const voucherNo = document.getElementById('batch-voucher-no').value.trim();
+      const notes = document.getElementById('batch-notes').value;
+
+      const selectedCustodyIds = Array.from(document.querySelectorAll('.custody-cb:checked')).map(cb => cb.value);
+      const selectedInvoiceIds = Array.from(document.querySelectorAll('.invoice-cb:checked')).map(cb => cb.value);
+
+      const custodiesSum = custodies.filter(c => selectedCustodyIds.includes(c.id)).reduce((s, c) => s + c.amount, 0);
+      const invoicesSum = transactions.filter(t => selectedInvoiceIds.includes(t.id)).reduce((s, t) => s + t.amount, 0);
+
+      const settlementId = 'STL-' + Date.now();
+      const isApproved = voucherNo.length > 0;
+
+      const newSettlement = {
+        id: settlementId,
+        date: new Date().toLocaleString('ar-EG'),
+        voucherNo: voucherNo || 'غير محدد',
+        status: isApproved ? 'معتمدة' : 'معلقة',
+        custodyIds: selectedCustodyIds,
+        invoiceIds: selectedInvoiceIds,
+        custodiesSum,
+        invoicesSum,
+        netResult: custodiesSum - invoicesSum,
+        notes
+      };
+
+      settlements.push(newSettlement);
+
+      // Lock items
+      selectedCustodyIds.forEach(id => {
+        const c = custodies.find(item => item.id === id);
+        if (c) c.status = isApproved ? 'مسواة' : 'تسوية معلقة';
+      });
+
+      selectedInvoiceIds.forEach(id => {
+        const t = transactions.find(item => item.id === id);
+        if (t) t.status = isApproved ? 'مسواة' : 'تسوية معلقة';
+      });
+
+      saveData();
+      toggleModal('batch-settlement-modal');
+      e.target.reset();
+      printSettlementReport(newSettlement);
+    }
+
+    function renderSettlementLog() {
+      const tbody = document.getElementById('settlement-log-tbody');
+      if (settlements.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-slate-400">لا توجد محاضر تسوية مسجلة</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = settlements.map(s => `
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-2.5 font-bold text-blue-900">${s.id}</td>
+          <td class="p-2.5">${s.date}</td>
+          <td class="p-2.5">
+            <span class="px-2 py-0.5 rounded-full text-xxs font-bold ${s.status === 'معتمدة' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+              ${s.status}
+            </span>
+          </td>
+          <td class="p-2.5 font-bold">${s.voucherNo}</td>
+          <td class="p-2.5">${s.custodiesSum.toFixed(2)} ج.م</td>
+          <td class="p-2.5">${s.invoicesSum.toFixed(2)} ج.م</td>
+          <td class="p-2.5 font-bold ${s.netResult >= 0 ? 'text-emerald-700' : 'text-rose-700'}">${s.netResult.toFixed(2)} ج.م</td>
+          <td class="p-2.5 flex gap-1">
+            <button onclick="viewSettlementDetail('${s.id}')" class="bg-slate-800 text-amber-300 px-2 py-1 rounded hover:bg-slate-700 font-bold">عرض التفاصيل</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function viewSettlementDetail(id) {
+      const s = settlements.find(item => item.id === id);
+      if (!s) return;
+      currentActiveLogId = id;
+
+      const incCustodies = custodies.filter(c => s.custodyIds.includes(c.id));
+      const incInvoices = transactions.filter(t => s.invoiceIds.includes(t.id));
+
+      document.getElementById('log-detail-content').innerHTML = `
+        <div class="bg-slate-50 p-3 rounded-xl border space-y-1">
+          <p><b>رقم المحضر:</b> ${s.id}</p>
+          <p><b>تاريخ المحضر:</b> ${s.date}</p>
+          <p><b>الحالة:</b> ${s.status}</p>
+          <p><b>رقم سند الصرف:</b> ${s.voucherNo}</p>
+        </div>
+        <div>
+          <b>العُهد المشمولة (${incCustodies.length}):</b>
+          <ul class="list-disc pr-5 text-slate-700">
+            ${incCustodies.map(c => `<li>عُهدة #${c.number} - ${c.rep} (${c.amount} ج.م)</li>`).join('')}
+          </ul>
+        </div>
+        <div>
+          <b>الفواتير والمصروفات المشمولة (${incInvoices.length}):</b>
+          <ul class="list-disc pr-5 text-slate-700">
+            ${incInvoices.map(i => `<li>${i.party} - ${i.type} (${i.amount} ج.م)</li>`).join('')}
+          </ul>
+        </div>
+      `;
+
+      document.getElementById('edit-voucher-input').value = s.voucherNo === 'غير محدد' ? '' : s.voucherNo;
+      document.getElementById('update-voucher-btn').onclick = () => confirmVoucherUpdate(s.id);
+      document.getElementById('reopen-settlement-btn').onclick = () => deleteAndReopenSettlement(s.id);
+      document.getElementById('reprint-log-btn').onclick = () => printSettlementReport(s);
+
+      toggleModal('view-log-modal');
+    }
+
+    function confirmVoucherUpdate(id) {
+      const voucherNo = document.getElementById('edit-voucher-input').value.trim();
+      if (!voucherNo) {
+        alert('برجاء أدخل رقم سند الصرف/القبض!');
+        return;
+      }
+      const s = settlements.find(item => item.id === id);
+      if (s) {
+        s.voucherNo = voucherNo;
+        s.status = 'معتمدة';
+
+        s.custodyIds.forEach(cId => {
+          const c = custodies.find(item => item.id === cId);
+          if (c) c.status = 'مسواة';
+        });
+
+        s.invoiceIds.forEach(iId => {
+          const t = transactions.find(item => item.id === iId);
+          if (t) t.status = 'مسواة';
+        });
+
+        saveData();
+        toggleModal('view-log-modal');
+      }
+    }
+
+    function deleteAndReopenSettlement(id) {
+      if (!confirm('هل أنت تأكد من إلغاء المحضر وإعادة فتح العُهد والفواتير المرتبطة به؟')) return;
+      const s = settlements.find(item => item.id === id);
+      if (s) {
+        s.custodyIds.forEach(cId => {
+          const c = custodies.find(item => item.id === cId);
+          if (c) c.status = 'مفتوحة';
+        });
+
+        s.invoiceIds.forEach(iId => {
+          const t = transactions.find(item => item.id === iId);
+          if (t) t.status = 'في الانتظار';
+        });
+
+        settlements = settlements.filter(item => item.id !== id);
+        saveData();
+        toggleModal('view-log-modal');
+      }
+    }
+
+    function printSettlementReport(s) {
+      const incCustodies = custodies.filter(c => s.custodyIds.includes(c.id));
+      const incInvoices = transactions.filter(t => s.invoiceIds.includes(t.id));
+
+      document.getElementById('pr-s-id').innerText = s.id;
+      document.getElementById('pr-s-date').innerText = s.date;
+      document.getElementById('pr-s-status-badge').innerText = s.status;
+      document.getElementById('pr-s-voucher').innerText = s.voucherNo;
+
+      document.getElementById('pr-custodies-list').innerHTML = incCustodies.map(c => `
+        <div class="flex justify-between border-b pb-0.5">
+          <span>عُهدة #${c.number} (${c.rep})</span>
+          <b>${c.amount.toFixed(2)} ج.م</b>
+        </div>
+      `).join('');
+
+      document.getElementById('pr-invoices-list').innerHTML = incInvoices.map(i => `
+        <tr class="border-b">
+          <td class="p-1">${i.party}</td>
+          <td class="p-1">${i.type}</td>
+          <td class="p-1 font-bold">${i.amount.toFixed(2)} ج.م</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('pr-total-custodies').innerText = s.custodiesSum.toFixed(2) + ' ج.م';
+      document.getElementById('pr-total-invoices').innerText = s.invoicesSum.toFixed(2) + ' ج.م';
+      document.getElementById('pr-net-result').innerText = s.netResult.toFixed(2) + ' ج.م';
+
+      window.print();
+    }
+
+    function renderPettyCash() {
+      const tbody = document.getElementById('petty-cash-tbody');
+      const query = document.getElementById('search-petty-cash').value.toLowerCase();
+      const filtered = pettyCashLog.filter(p => p.category.toLowerCase().includes(query) || (p.person && p.person.toLowerCase().includes(query)));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-slate-400">لا توجد حركات مسجلة</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => `
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-2.5">${p.date}</td>
+          <td class="p-2.5"><span class="px-2 py-0.5 rounded text-xxs font-bold ${p.type === 'صرف' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">${p.type}</span></td>
+          <td class="p-2.5 font-bold">${p.category}</td>
+          <td class="p-2.5">${p.person || '-'}</td>
+          <td class="p-2.5 font-bold ${p.type === 'صرف' ? 'text-rose-700' : 'text-emerald-700'}">${p.amount.toFixed(2)} ج.م</td>
+          <td class="p-2.5">${p.note || '-'}</td>
+          <td class="p-2.5">
+            <button onclick="deletePettyCash('${p.id}')" class="text-rose-600 hover:text-rose-900 font-bold">حذف</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function deletePettyCash(id) {
+      if (confirm('هل أنت تأكد من حذف هذه الحركة؟')) {
+        pettyCashLog = pettyCashLog.filter(p => p.id !== id);
+        saveData();
+      }
+    }
+
+    function renderSettledCustodies() {
+      const tbody = document.getElementById('settled-custodies-tbody');
+      const query = document.getElementById('search-settled-custody').value.toLowerCase();
+      const closed = custodies.filter(c => c.status === 'مسواة' && (c.number.toLowerCase().includes(query) || c.rep.toLowerCase().includes(query)));
+
+      if (closed.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-slate-400">لا توجد عُهد مسواة ومغلقة حتى الآن</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = closed.map(c => {
+        const parentSettlement = settlements.find(s => s.custodyIds.includes(c.id));
+        return `
+          <tr class="border-b hover:bg-slate-50">
+            <td class="p-2.5 font-bold text-blue-900">#${c.number}</td>
+            <td class="p-2.5">${c.rep}</td>
+            <td class="p-2.5">${c.date}</td>
+            <td class="p-2.5 font-bold">${c.amount.toFixed(2)} ج.م</td>
+            <td class="p-2.5 text-emerald-700 font-bold">0.00 ج.م</td>
+            <td class="p-2.5">${parentSettlement ? parentSettlement.id : '-'}</td>
+            <td class="p-2.5"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xxs font-bold">مسواة ومغلقة</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // CSV Exports
+    function exportPettyCashCSV() {
+      let csv = "\ufeffالتاريخ,نوع الحركة,التصنيف,المستلم,المبلغ,الملاحظات\n";
+      pettyCashLog.forEach(p => {
+        csv += `"${p.date}","${p.type}","${p.category}","${p.person || ''}",${p.amount},"${p.note || ''}"\n`;
+      });
+      downloadCSV(csv, `سجل_النثريات_${new Date().toISOString().slice(0,10)}.csv`);
+    }
+
+    function exportSettlementsCSV() {
+      let csv = "\ufeffرقم التسوية,التاريخ,الحالة,رقم السند,إجمالي العُهد,إجمالي الفواتير,النتيجة المالية\n";
+      settlements.forEach(s => {
+        csv += `"${s.id}","${s.date}","${s.status}","${s.voucherNo}",${s.custodiesSum},${s.invoicesSum},${s.netResult}\n`;
+      });
+      downloadCSV(csv, `سجل_محاضر_التسويات_${new Date().toISOString().slice(0,10)}.csv`);
+    }
+
+    function downloadCSV(csvContent, filename) {
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Settings & JSON Backup/Restore
+    function saveAppSettings(e) {
+      e.preventDefault();
+      appSettings.appName = document.getElementById('set-app-name').value;
+      appSettings.companyName = document.getElementById('set-company-name').value;
+      saveData();
+      applyBranding();
+      toggleModal('modal-settings');
+    }
+
+    function saveSecurityPins(e) {
+      e.preventDefault();
+      appSettings.settingsPin = document.getElementById('set-settings-pin').value;
+      appSettings.resetPin = document.getElementById('set-reset-pin').value;
+      saveData();
+      alert('تم تحديث الأرقام السرية بنجاح!');
+      toggleModal('modal-settings');
+    }
+
+    function exportFullJSONBackup() {
+      const backupData = { appSettings, representatives, custodies, transactions, pettyCashLog, settlements };
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `نسخة_احتياطية_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importFullJSONBackup(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = JSON.parse(evt.target.result);
+          if (data.custodies && data.settlements) {
+            appSettings = data.appSettings || appSettings;
+            representatives = data.representatives || representatives;
+            custodies = data.custodies || [];
+            transactions = data.transactions || [];
+            pettyCashLog = data.pettyCashLog || [];
+            settlements = data.settlements || [];
+
+            saveData();
+            applyBranding();
+            alert('تم استرجاع النسخة الاحتياطية بنجاح!');
+            toggleModal('modal-settings');
+          } else {
+            alert('ملف النسخة الاحتياطية غير صالح!');
+          }
+        } catch (err) {
+          alert('حدث خطأ أثناء قراءة الملف!');
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
